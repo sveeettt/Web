@@ -1,0 +1,77 @@
+<%- include('partials/header') %>
+
+<div class="page-header">
+    <h2><%= title %></h2>
+    <a href="/flights" class="btn btn-secondary">Назад к списку рейсов</a>
+</div>
+
+<div class="form-container">
+    <form action="<%= action %>" method="POST" class="flight-form">
+        <% if (method === 'PUT') { %>
+            <input type="hidden" name="_method" value="PUT">
+        <% } %>
+        
+        <div class="form-group">
+            <label for="id">Номер рейса</label>
+            <input type="text" id="id" name="id" value="<%= flight.id || '' %>" 
+                   <%= method === 'PUT' ? 'readonly' : 'required' %>>
+        </div>
+        
+        <div class="form-group">
+            <label for="departure">Пункт отправления</label>
+            <input type="text" id="departure" name="departure" value="<%= flight.departure || '' %>" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="destination">Пункт назначения</label>
+            <input type="text" id="destination" name="destination" value="<%= flight.destination || '' %>" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="departureTime">Время вылета</label>
+            <input type="text" id="departureTime" name="departureTime" value="<%= flight.departureTime || '' %>" 
+                   placeholder="HH:MM" required pattern="([01]?[0-9]|2[0-3]):[0-5][0-9]">
+        </div>
+        
+        <div class="form-group">
+            <label for="arrivalTime">Время прилета</label>
+            <input type="text" id="arrivalTime" name="arrivalTime" value="<%= flight.arrivalTime || '' %>" 
+                   placeholder="HH:MM" required pattern="([01]?[0-9]|2[0-3]):[0-5][0-9]">
+        </div>
+        
+        <div class="form-group">
+            <label for="aircraft">Тип самолета</label>
+            <select id="aircraft" name="aircraft" required>
+                <option value="" disabled <%= !flight.aircraft ? 'selected' : '' %>>Выберите тип самолета</option>
+                <option value="Boeing 737-300" <%= flight.aircraft === 'Boeing 737-300' ? 'selected' : '' %>>Boeing 737-300</option>
+                <option value="Boeing 737-800" <%= flight.aircraft === 'Boeing 737-800' ? 'selected' : '' %>>Boeing 737-800</option>
+                <option value="Embraer 195" <%= flight.aircraft === 'Embraer 195' ? 'selected' : '' %>>Embraer 195</option>
+                <option value="Embraer 175" <%= flight.aircraft === 'Embraer 175' ? 'selected' : '' %>>Embraer 175</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="status">Статус</label>
+            <select id="status" name="status" required>
+                <option value="" disabled <%= !flight.status ? 'selected' : '' %>>Выберите статус</option>
+                <option value="По расписанию" <%= flight.status === 'По расписанию' ? 'selected' : '' %>>По расписанию</option>
+                <option value="Задерживается" <%= flight.status === 'Задерживается' ? 'selected' : '' %>>Задерживается</option>
+                <option value="Отменен" <%= flight.status === 'Отменен' ? 'selected' : '' %>>Отменен</option>
+                <option value="Вылетел" <%= flight.status === 'Вылетел' ? 'selected' : '' %>>Вылетел</option>
+                <option value="Прибыл" <%= flight.status === 'Прибыл' ? 'selected' : '' %>>Прибыл</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="price">Цена (руб)</label>
+            <input type="number" id="price" name="price" value="<%= flight.price || '' %>" min="0" step="100" required>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+            <a href="/flights" class="btn btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,193 @@
+<%- include('partials/header') %>
+
+<div class="page-header">
+    <h2>Рейсы Взлёт</h2>
+    <a href="/flights/new" class="btn btn-primary">Добавить новый рейс</a>
+</div>
+
+<!-- Форма поиска и фильтрации -->
+<div class="search-container">
+    <form action="/flights" method="GET" class="search-form">
+        <div class="search-box">
+            <input type="text" name="search" value="<%= search %>" placeholder="Поиск рейсов...">
+            <button type="submit" class="btn btn-primary">Искать</button>
+        </div>
+        
+        <input type="hidden" name="sortBy" value="<%= sortBy %>">
+        <input type="hidden" name="sortOrder" value="<%= sortOrder %>">
+        <input type="hidden" name="page" value="1">
+        <input type="hidden" name="limit" value="<%= pagination.perPage %>">
+        
+        <% if (search) { %>
+            <div class="search-results">
+                <p>Результаты поиска для: "<%= search %>" </p>
+                <a href="/flights" class="btn btn-small btn-secondary">Сбросить</a>
+            </div>
+        <% } %>
+    </form>
+</div>
+
+<div class="flights-container">
+    <% if (flights && flights.length > 0) { %>
+        <table class="flights-table">
+            <thead>
+                <tr>
+                    <th>
+                        <a href="/flights?sortBy=id&sortOrder=<%= sortBy === 'id' && sortOrder === 'asc' ? 'desc' : 'asc' %>&search=<%= search %>&page=<%= pagination.currentPage %>&limit=<%= pagination.perPage %>" 
+                           class="sort-link <%= sortBy === 'id' ? 'active' : '' %>">
+                            Номер рейса
+                            <% if (sortBy === 'id') { %>
+                                <span class="sort-icon"><%= sortOrder === 'asc' ? '▲' : '▼' %></span>
+                            <% } %>
+                        </a>
+                    </th>
+                    <th>
+                        <a href="/flights?sortBy=departure&sortOrder=<%= sortBy === 'departure' && sortOrder === 'asc' ? 'desc' : 'asc' %>&search=<%= search %>&page=<%= pagination.currentPage %>&limit=<%= pagination.perPage %>" 
+                           class="sort-link <%= sortBy === 'departure' ? 'active' : '' %>">
+                            Откуда
+                            <% if (sortBy === 'departure') { %>
+                                <span class="sort-icon"><%= sortOrder === 'asc' ? '▲' : '▼' %></span>
+                            <% } %>
+                        </a>
+                    </th>
+                    <th>
+                        <a href="/flights?sortBy=destination&sortOrder=<%= sortBy === 'destination' && sortOrder === 'asc' ? 'desc' : 'asc' %>&search=<%= search %>&page=<%= pagination.currentPage %>&limit=<%= pagination.perPage %>" 
+                           class="sort-link <%= sortBy === 'destination' ? 'active' : '' %>">
+                            Куда
+                            <% if (sortBy === 'destination') { %>
+                                <span class="sort-icon"><%= sortOrder === 'asc' ? '▲' : '▼' %></span>
+                            <% } %>
+                        </a>
+                    </th>
+                    <th>
+                        <a href="/flights?sortBy=departureTime&sortOrder=<%= sortBy === 'departureTime' && sortOrder === 'asc' ? 'desc' : 'asc' %>&search=<%= search %>&page=<%= pagination.currentPage %>&limit=<%= pagination.perPage %>" 
+                           class="sort-link <%= sortBy === 'departureTime' ? 'active' : '' %>">
+                            Время вылета
+                            <% if (sortBy === 'departureTime') { %>
+                                <span class="sort-icon"><%= sortOrder === 'asc' ? '▲' : '▼' %></span>
+                            <% } %>
+                        </a>
+                    </th>
+                    <th>Время прилета</th>
+                    <th>Самолет</th>
+                    <th>
+                        <a href="/flights?sortBy=status&sortOrder=<%= sortBy === 'status' && sortOrder === 'asc' ? 'desc' : 'asc' %>&search=<%= search %>&page=<%= pagination.currentPage %>&limit=<%= pagination.perPage %>" 
+                           class="sort-link <%= sortBy === 'status' ? 'active' : '' %>">
+                            Статус
+                            <% if (sortBy === 'status') { %>
+                                <span class="sort-icon"><%= sortOrder === 'asc' ? '▲' : '▼' %></span>
+                            <% } %>
+                        </a>
+                    </th>
+                    <th>
+                        <a href="/flights?sortBy=price&sortOrder=<%= sortBy === 'price' && sortOrder === 'asc' ? 'desc' : 'asc' %>&search=<%= search %>&page=<%= pagination.currentPage %>&limit=<%= pagination.perPage %>" 
+                           class="sort-link <%= sortBy === 'price' ? 'active' : '' %>">
+                            Цена
+                            <% if (sortBy === 'price') { %>
+                                <span class="sort-icon"><%= sortOrder === 'asc' ? '▲' : '▼' %></span>
+                            <% } %>
+                        </a>
+                    </th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% flights.forEach(flight => { %>
+                    <tr>
+                        <td><%= flight.id %></td>
+                        <td><%= flight.departure %></td>
+                        <td><%= flight.destination %></td>
+                        <td><%= flight.departureTime %></td>
+                        <td><%= flight.arrivalTime %></td>
+                        <td><%= flight.aircraft %></td>
+                        <td class="<%= flight.status.toLowerCase().includes('задерж') ? 'status-delayed' : '' %>">
+                            <%= flight.status %>
+                        </td>
+                        <td><%= flight.price.toLocaleString() %> руб</td>
+                        <td class="actions">
+                            <a href="/flights/edit/<%= flight.id %>" class="btn btn-small btn-edit">Изменить</a>
+                            <form action="/api/flights/<%= flight.id %>/delete" method="POST">
+                                <button type="submit" class="btn btn-small btn-delete" 
+                                        onclick="return confirm('Вы уверены, что хотите удалить этот рейс?')">
+                                    Удалить
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                <% }); %>
+            </tbody>
+        </table>
+        
+        <!-- Пагинация -->
+        <% if (pagination.totalPages > 1) { %>
+            <div class="pagination">
+                <div class="pagination-info">
+                    Показано <%= flights.length %> из <%= pagination.totalFlights %> рейсов | 
+                    Страница <%= pagination.currentPage %> из <%= pagination.totalPages %>
+                </div>
+                <div class="pagination-controls">
+                    <% if (pagination.hasPrev) { %>
+                        <a href="/flights?page=1&limit=<%= pagination.perPage %>&sortBy=<%= sortBy %>&sortOrder=<%= sortOrder %>&search=<%= search %>" 
+                           class="btn btn-small btn-secondary">Первая</a>
+                        <a href="/flights?page=<%= pagination.currentPage - 1 %>&limit=<%= pagination.perPage %>&sortBy=<%= sortBy %>&sortOrder=<%= sortOrder %>&search=<%= search %>" 
+                           class="btn btn-small btn-secondary">Назад</a>
+                    <% } else { %>
+                        <span class="btn btn-small btn-disabled">Первая</span>
+                        <span class="btn btn-small btn-disabled">Назад</span>
+                    <% } %>
+                    
+                    <% 
+                        let startPage = Math.max(1, pagination.currentPage - 2);
+                        let endPage = Math.min(pagination.totalPages, pagination.currentPage + 2);
+                        
+                        // Корректировка для отображения 5 страниц
+                        if (endPage - startPage < 4 && pagination.totalPages > 4) {
+                            if (startPage === 1) {
+                                endPage = Math.min(5, pagination.totalPages);
+                            } else if (endPage === pagination.totalPages) {
+                                startPage = Math.max(1, pagination.totalPages - 4);
+                            }
+                        }
+                    %>
+                    <!--Номера--> 
+                    <% for (let i = startPage; i <= endPage; i++) { %>
+                        <a href="/flights?page=<%= i %>&limit=<%= pagination.perPage %>&sortBy=<%= sortBy %>&sortOrder=<%= sortOrder %>&search=<%= search %>" 
+                           class="btn btn-small <%= i === pagination.currentPage ? 'btn-primary' : 'btn-secondary' %>">
+                            <%= i %>
+                        </a>
+                    <% } %>
+                    
+                    <% if (pagination.hasNext) { %>
+                        <a href="/flights?page=<%= pagination.currentPage + 1 %>&limit=<%= pagination.perPage %>&sortBy=<%= sortBy %>&sortOrder=<%= sortOrder %>&search=<%= search %>" 
+                           class="btn btn-small btn-secondary">Вперед</a>
+                        <a href="/flights?page=<%= pagination.totalPages %>&limit=<%= pagination.perPage %>&sortBy=<%= sortBy %>&sortOrder=<%= sortOrder %>&search=<%= search %>" 
+                           class="btn btn-small btn-secondary">Последняя</a>
+                    <% } else { %>
+                        <span class="btn btn-small btn-disabled">Вперед</span>
+                        <span class="btn btn-small btn-disabled">Последняя</span>
+                    <% } %>
+                </div>
+                
+                <div class="per-page-selector">
+                    <span>Показывать на странице:</span>
+                    <% [5, 10, 20].forEach(limit => { %>
+                        <a href="/flights?page=1&limit=<%= limit %>&sortBy=<%= sortBy %>&sortOrder=<%= sortOrder %>&search=<%= search %>" 
+                           class="btn btn-small <%= pagination.perPage === limit ? 'btn-primary' : 'btn-secondary' %>">
+                            <%= limit %>
+                        </a>
+                    <% }); %>
+                </div>
+            </div>
+        <% } %>
+    <% } else { %>
+        <div class="empty-state">
+            <% if (search) { %>
+                <p>По запросу "<%= search %>" рейсы не найдены. <a href="/flights">Сбросить поиск</a></p>
+            <% } else { %>
+                <p>Рейсы не найдены. Добавьте новый рейс.</p>
+            <% } %>
+        </div>
+    <% } %>
+</div>
+
+<%- include('partials/footer') %>

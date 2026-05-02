@@ -1,0 +1,74 @@
+{
+  "flights": [
+    {
+      "departure": "Минск",
+      "destination": "Санкт-Петербург",
+      "departureTime": "10:50",
+      "arrivalTime": "11:20",
+      "aircraft": "Embraer 195",
+      "status": "По расписанию",
+      "price": 17200,
+      "id": "B2702"
+    },
+    {
+      "id": "B2845",
+      "departure": "Минск",
+      "destination": "Стамбул",
+      "departureTime": "12:15",
+      "arrivalTime": "15:40",
+      "aircraft": "Boeing 737-800",
+      "status": "Задерживается",
+      "price": 29500
+    },
+    {
+      "departure": "Минск",
+      "destination": "Дубай",
+      "departureTime": "14:20",
+      "arrivalTime": "21:05",
+      "aircraft": "Boeing 737-800",
+      "status": "Задерживается",
+      "price": 49000,
+      "id": "B2937"
+    },
+    {
+      "id": "B2847",
+      "departure": "Минск",
+      "destination": "Берлин",
+      "departureTime": "10:30",
+      "arrivalTime": "11:45",
+      "aircraft": "Embraer 195",
+      "status": "По расписанию",
+      "price": 21300
+    },
+    {
+      "id": "B2772",
+      "departure": "Минск",
+      "destination": "Варшава",
+      "departureTime": "16:50",
+      "arrivalTime": "17:40",
+      "aircraft": "Embraer 195",
+      "status": "По расписанию",
+      "price": 15900
+    },
+    {
+      "id": "B2806",
+      "departure": "Минск",
+      "destination": "Вильнюс",
+      "departureTime": "07:20",
+      "arrivalTime": "08:00",
+      "aircraft": "Boeing 737-300",
+      "status": "По расписанию",
+      "price": 12400
+    },
+    {
+      "id": "B2854",
+      "departure": "Минск",
+      "destination": "Тель-Авив",
+      "departureTime": "22:40",
+      "arrivalTime": "03:15",
+      "aircraft": "Boeing 737-800",
+      "status": "По расписанию",
+      "price": 39800
+    }
+  ]
+}
