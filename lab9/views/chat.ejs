@@ -19,6 +19,12 @@
                 <option value="Admin">Администратор (Admin)</option>
             </select>
         </div>
+        <div class="form-group" id="room-select-group" style="display:none;">
+            <label>Выбрать комнату:</label>
+            <select id="room-select" class="form-control">
+                <option value="general">Общая комната</option>
+            </select>
+        </div>
         <button onclick="joinChat()" class="btn btn-primary">Войти в чат</button>
     </div>
 
@@ -26,8 +32,70 @@
     <div id="chat-window" style="display:none;">
         <div id="chat-header" style="background: #003580; color: white; padding: 10px; border-radius: 8px 8px 0 0;">
             <span id="current-user"></span>
+            <span id="current-room" style="margin-left: 15px; font-size: 12px;"></span>
             <button onclick="leaveChat()" style="float: right; background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Выйти</button>
         </div>
+        
+        <!-- Панель администратора (только для Admin) -->
+        <div id="admin-panel" style="display:none; background: #f0f0f0; padding: 10px; border-bottom: 1px solid #ddd;">
+            <h4>Панель администратора</h4>
+            
+            <!-- Создание комнаты -->
+            <div style="margin-bottom: 10px; padding: 8px; background: #e8f0fe; border-radius: 4px;">
+                <strong>Создать закрытую комнату:</strong>
+                <div style="display: flex; gap: 10px; margin-top: 5px; flex-wrap: wrap;">
+                    <input type="text" id="new-room-name" placeholder="Название комнаты" style="flex:1; padding: 5px;">
+                    <input type="text" id="invite-users" placeholder="Пригласить пользователей (через запятую)" style="flex:2; padding: 5px;">
+                    <button onclick="createPrivateRoom()" class="btn btn-small btn-primary">Создать</button>
+                </div>
+            </div>
+            
+            <!-- Приглашение в комнату -->
+            <div style="margin-bottom: 10px; padding: 8px; background: #e8f0fe; border-radius: 4px;">
+                <strong>Пригласить в комнату:</strong>
+                <div style="display: flex; gap: 10px; margin-top: 5px; flex-wrap: wrap;">
+                    <input type="text" id="invite-username" placeholder="Имя пользователя" style="flex:1; padding: 5px;">
+                    <select id="invite-room-select" style="flex:1; padding: 5px;">
+                        <option value="general">general 🌐</option>
+                    </select>
+                    <button onclick="inviteToRoom()" class="btn btn-small btn-primary">Пригласить</button>
+                </div>
+            </div>
+            
+            <!-- Блокировка -->
+            <div style="margin-bottom: 10px; padding: 8px; background: #ffe8e8; border-radius: 4px;">
+                <strong>Блокировка пользователя:</strong>
+                <div style="display: flex; gap: 10px; margin-top: 5px;">
+                    <input type="text" id="block-username" placeholder="Имя пользователя" style="flex:1; padding: 5px;">
+                    <button onclick="blockUser()" class="btn btn-small btn-danger">Заблокировать</button>
+                </div>
+            </div>
+            
+            <!-- Списки -->
+            <div style="display: flex; gap: 20px; font-size: 12px; flex-wrap: wrap;">
+                <div id="online-users-list" style="background: white; padding: 5px 10px; border-radius: 4px;"></div>
+                <div id="blocked-list" style="background: white; padding: 5px 10px; border-radius: 4px; color: #dc3545;"></div>
+            </div>
+            
+            <!-- Переключение комнаты -->
+            <div style="margin-top: 10px; padding: 8px; background: #fff8e8; border-radius: 4px;">
+                <strong>Переключить комнату:</strong>
+                <select id="switch-room-select" style="padding: 5px; margin-left: 10px;">
+                    <option value="general">general 🌐</option>
+                </select>
+                <button onclick="switchRoom()" class="btn btn-small btn-secondary">Перейти</button>
+            </div>
+        </div>
+        
+        <!-- Блок для пользователя: список доступных комнат -->
+        <div id="user-rooms-panel" style="display:none; background: #e8f0fe; padding: 8px; border-bottom: 1px solid #ddd; font-size: 13px;">
+            <strong>Доступные комнаты:</strong>
+            <select id="user-room-select" style="padding: 3px; margin-left: 10px;">
+                <option value="general">Общая комната</option>
+            </select>
+            <button onclick="userJoinRoom()" class="btn btn-small btn-primary">Перейти</button>
+        </div>
+        
         <div id="messages" style="height: 400px; overflow-y: auto; padding: 15px; background: #f9f9f9; border: 1px solid #ddd;"></div>
         <div class="chat-input-area">
             <input type="text" id="messageInput" placeholder="Введите сообщение..." onkeypress="if(event.key==='Enter') sendMessage()">
@@ -41,6 +109,12 @@
     let socket = null;
     let currentUser = null;
     let currentRole = null;
+    let currentRoom = 'general';
+    
+    // Хранилище сообщений для каждой комнаты
+    let roomMessages = {
+        'general': []
+    };
 
     function joinChat() {
         const username = document.getElementById('username').value.trim();
@@ -54,28 +128,67 @@
         currentUser = username;
         currentRole = role;
         
-        // Подключаемся к Socket.IO
         socket = io();
         
-        // Отправляем событие входа
-        socket.emit('join', { username: currentUser, role: currentRole });
+        let selectedRoom = 'general';
+        if (role === 'Admin') {
+            const roomSelect = document.getElementById('room-select');
+            if (roomSelect && roomSelect.value) {
+                selectedRoom = roomSelect.value;
+            }
+        }
         
-        // Показываем окно чата
+        socket.emit('join', { 
+            username: currentUser, 
+            role: currentRole,
+            room: selectedRoom
+        });
+        
         document.getElementById('login-form').style.display = 'none';
         document.getElementById('chat-window').style.display = 'block';
         document.getElementById('current-user').innerHTML = `Вы вошли как: <strong>${currentUser}</strong> (${currentRole === 'Admin' ? 'Администратор' : 'Пассажир'})`;
+        document.getElementById('current-room').innerHTML = `Комната: ${selectedRoom}`;
+        currentRoom = selectedRoom;
+        
+        if (currentRole === 'Admin') {
+            document.getElementById('admin-panel').style.display = 'block';
+            document.getElementById('user-rooms-panel').style.display = 'none';
+        } else {
+            document.getElementById('user-rooms-panel').style.display = 'block';
+            document.getElementById('admin-panel').style.display = 'none';
+        }
+        
         document.getElementById('messageInput').focus();
         
-        // Обработчики Socket.IO событий
+        // Socket обработчики
         socket.on('message', (data) => {
-            addMessage(data);
+            const msgRoom = data.room || currentRoom;
+            if (!roomMessages[msgRoom]) {
+                roomMessages[msgRoom] = [];
+            }
+            roomMessages[msgRoom].push(data);
+            
+            if (msgRoom === currentRoom) {
+                addMessageToUI(data);
+            }
+        });
+        
+        socket.on('clearMessages', () => {
+            if (roomMessages[currentRoom]) {
+                roomMessages[currentRoom] = [];
+            }
+            renderCurrentRoomMessages();
         });
         
         socket.on('messageDeleted', (messageId) => {
-            const msgElement = document.getElementById(`msg-${messageId}`);
-            if (msgElement) {
-                msgElement.remove();
+            for (const room in roomMessages) {
+                const index = roomMessages[room].findIndex(m => m.id === messageId);
+                if (index !== -1) {
+                    roomMessages[room].splice(index, 1);
+                }
             }
+            const msgElement = document.getElementById(`msg-${messageId}`);
+            if (msgElement) msgElement.remove();
         });
         
         socket.on('userBlocked', (data) => {
@@ -83,13 +196,105 @@
                 alert('Вы были заблокированы администратором!');
                 leaveChat();
             } else {
-                addMessage({ user: 'System', text: `${data.username} был заблокирован`, role: 'system' });
+                const systemMsg = { user: 'System', text: `${data.username} был заблокирован`, role: 'system', id: Date.now() };
+                if (!roomMessages[currentRoom]) roomMessages[currentRoom] = [];
+                roomMessages[currentRoom].push(systemMsg);
+                addMessageToUI(systemMsg);
             }
+        });
+        
+        socket.on('roomChanged', (data) => {
+            currentRoom = data.room;
+            document.getElementById('current-room').innerHTML = `Комната: ${currentRoom}`;
+            renderCurrentRoomMessages();
+        });
+        
+        socket.on('roomsList', (rooms) => {
+            console.log('Получены комнаты:', rooms);
+            updateRoomsSelectors(rooms);
+        });
+        
+        socket.on('availableRooms', (rooms) => {
+            updateUserRoomSelect(rooms);
+        });
+        
+        socket.on('onlineUsersList', (users) => {
+            const onlineDiv = document.getElementById('online-users-list');
+            if (onlineDiv) {
+                onlineDiv.innerHTML = `<strong>Онлайн:</strong> ${users.join(', ') || 'никого'}`;
+            }
+        });
+        
+        socket.on('blockedUsersList', (users) => {
+            const blockedDiv = document.getElementById('blocked-list');
+            if (blockedDiv) {
+                blockedDiv.innerHTML = `<strong>Заблокированные:</strong> ${users.join(', ') || 'нет'}`;
+            }
+        });
+        
+        socket.on('invitation', (data) => {
+            if (confirm(`Пользователь ${data.invitedBy} пригласил вас в комнату "${data.room}". Принять?`)) {
+                socket.emit('acceptInvitation', { roomName: data.room });
+            }
+        });
+        
+        socket.on('roomCreated', (data) => {
+            const systemMsg = { user: 'System', text: `Создана комната "${data.roomName}"`, role: 'system', id: Date.now() };
+            if (!roomMessages[currentRoom]) roomMessages[currentRoom] = [];
+            roomMessages[currentRoom].push(systemMsg);
+            addMessageToUI(systemMsg);
+            socket.emit('getRoomsList');
+        });
+        
+        socket.on('userInvited', (data) => {
+            const systemMsg = { user: 'System', text: `Пользователь ${data.username} приглашен в комнату "${data.roomName}"`, role: 'system', id: Date.now() };
+            if (!roomMessages[currentRoom]) roomMessages[currentRoom] = [];
+            roomMessages[currentRoom].push(systemMsg);
+            addMessageToUI(systemMsg);
+        });
+        
+        socket.on('accessDenied', (data) => {
+            alert(`Доступ к комнате "${data.room}" запрещен`);
+        });
+        
+        socket.on('error', (data) => {
+            alert(data.message);
+        });
+        
+        socket.on('history', (history) => {
+            if (!roomMessages[currentRoom]) {
+                roomMessages[currentRoom] = [];
+            }
+            roomMessages[currentRoom] = history;
+            renderCurrentRoomMessages();
         });
     }
     
-    function addMessage(data) {
+    function renderCurrentRoomMessages() {
         const messagesDiv = document.getElementById('messages');
+        messagesDiv.innerHTML = '';
+        
+        const messages = roomMessages[currentRoom] || [];
+        messages.forEach(msg => {
+            addMessageToUISilent(msg);
+        });
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+    
+    function addMessageToUI(data) {
+        const messagesDiv = document.getElementById('messages');
+        const messageDiv = createMessageElement(data);
+        messagesDiv.appendChild(messageDiv);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+    
+    function addMessageToUISilent(data) {
+        const messagesDiv = document.getElementById('messages');
+        const messageDiv = createMessageElement(data);
+        messagesDiv.appendChild(messageDiv);
+    }
+    
+    function createMessageElement(data) {
         const messageDiv = document.createElement('div');
         messageDiv.id = data.id ? `msg-${data.id}` : `msg-${Date.now()}`;
         messageDiv.className = `message ${data.role === 'Admin' ? 'admin-message' : (data.role === 'system' ? 'system-message' : 'user-message')}`;
@@ -112,16 +317,14 @@
             <div class="message-time">${time}</div>
         `;
         
-        messagesDiv.appendChild(messageDiv);
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        return messageDiv;
     }
     
     function sendMessage() {
         const input = document.getElementById('messageInput');
         const text = input.value.trim();
-        
         if (text && socket) {
-            socket.emit('sendMessage', text);
+            socket.emit('sendMessage', { text: text, room: currentRoom });
             input.value = '';
         }
     }
@@ -132,14 +335,133 @@
         }
     }
     
-    function leaveChat() {
-        if (socket) {
-            socket.disconnect();
+    function createPrivateRoom() {
+        const roomName = document.getElementById('new-room-name').value.trim();
+        const inviteUsers = document.getElementById('invite-users').value.trim();
+        const invitedUsers = inviteUsers ? inviteUsers.split(',').map(u => u.trim()).filter(u => u) : [];
+        
+        if (roomName) {
+            socket.emit('createPrivateRoom', { roomName, invitedUsers });
+            document.getElementById('new-room-name').value = '';
+            document.getElementById('invite-users').value = '';
+        } else {
+            alert('Введите название комнаты');
         }
+    }
+    
+    function inviteToRoom() {
+        const username = document.getElementById('invite-username').value.trim();
+        const roomName = document.getElementById('invite-room-select').value;
+        if (username && roomName) {
+            socket.emit('inviteToRoom', { username, roomName });
+            document.getElementById('invite-username').value = '';
+        } else {
+            alert('Введите имя пользователя');
+        }
+    }
+    
+    function blockUser() {
+        const username = document.getElementById('block-username').value.trim();
+        if (username) {
+            socket.emit('blockUser', username);
+            document.getElementById('block-username').value = '';
+        } else {
+            alert('Введите имя пользователя');
+        }
+    }
+    
+    function switchRoom() {
+        const newRoom = document.getElementById('switch-room-select').value;
+        if (newRoom && newRoom !== currentRoom) {
+            socket.emit('joinRoom', newRoom);
+        }
+    }
+    
+    function userJoinRoom() {
+        const newRoom = document.getElementById('user-room-select').value;
+        if (newRoom && newRoom !== currentRoom) {
+            socket.emit('joinRoom', newRoom);
+        }
+    }
+    
+    function updateRoomsSelectors(rooms) {
+        const inviteSelect = document.getElementById('invite-room-select');
+        const switchSelect = document.getElementById('switch-room-select');
+        const roomSelect = document.getElementById('room-select');
+        
+        if (!inviteSelect || !switchSelect) return;
+        
+        inviteSelect.innerHTML = '';
+        switchSelect.innerHTML = '';
+        if (roomSelect) roomSelect.innerHTML = '';
+        
+        if (!rooms || rooms.length === 0) {
+            addDefaultOptions(inviteSelect, switchSelect, roomSelect);
+            return;
+        }
+        
+        rooms.forEach(room => {
+            const option1 = document.createElement('option');
+            option1.value = room.name;
+            option1.textContent = `${room.name} ${room.isPrivate ? '🔒 (закрытая)' : '🌐 (общая)'}`;
+            inviteSelect.appendChild(option1);
+            
+            const option2 = document.createElement('option');
+            option2.value = room.name;
+            option2.textContent = `${room.name} ${room.isPrivate ? '🔒' : '🌐'}`;
+            switchSelect.appendChild(option2);
+            
+            if (roomSelect) {
+                const option3 = document.createElement('option');
+                option3.value = room.name;
+                option3.textContent = `${room.name} ${room.isPrivate ? '🔒' : '🌐'}`;
+                roomSelect.appendChild(option3);
+            }
+        });
+    }
+    
+    function addDefaultOptions(inviteSelect, switchSelect, roomSelect) {
+        const defaultOption1 = document.createElement('option');
+        defaultOption1.value = 'general';
+        defaultOption1.textContent = 'general 🌐';
+        inviteSelect.appendChild(defaultOption1);
+        
+        const defaultOption2 = document.createElement('option');
+        defaultOption2.value = 'general';
+        defaultOption2.textContent = 'general 🌐';
+        switchSelect.appendChild(defaultOption2);
+        
+        if (roomSelect) {
+            const defaultOption3 = document.createElement('option');
+            defaultOption3.value = 'general';
+            defaultOption3.textContent = 'general 🌐';
+            roomSelect.appendChild(defaultOption3);
+        }
+    }
+    
+    function updateUserRoomSelect(rooms) {
+        const select = document.getElementById('user-room-select');
+        if (!select) return;
+        
+        select.innerHTML = '';
+        rooms.forEach(room => {
+            const option = document.createElement('option');
+            option.value = room;
+            option.textContent = room;
+            if (room === currentRoom) option.selected = true;
+            select.appendChild(option);
+        });
+    }
+    
+    function leaveChat() {
+        if (socket) socket.disconnect();
         document.getElementById('login-form').style.display = 'block';
         document.getElementById('chat-window').style.display = 'none';
+        document.getElementById('admin-panel').style.display = 'none';
+        document.getElementById('user-rooms-panel').style.display = 'none';
         document.getElementById('username').value = '';
         document.getElementById('messages').innerHTML = '';
+        roomMessages = { 'general': [] };
     }
     
     function escapeHtml(str) {
@@ -161,61 +483,28 @@
         background: white;
         box-shadow: 0 1px 2px rgba(0,0,0,0.1);
     }
-    .user-message {
-        border-left: 4px solid #28a745;
-    }
-    .admin-message {
-        border-left: 4px solid #dc3545;
-        background: #fff5f5;
-    }
-    .system-message {
-        background: #e8f0fe;
-        text-align: center;
-        font-style: italic;
-        font-size: 13px;
-        color: #666;
-    }
-    .message-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 5px;
-    }
-    .message-role {
-        font-size: 10px;
-        padding: 2px 6px;
-        border-radius: 10px;
-        margin-left: 8px;
-    }
-    .message-role.admin {
-        background: #dc3545;
-        color: white;
-    }
-    .message-role.user {
-        background: #28a745;
-        color: white;
-    }
-    .message-text {
-        margin: 5px 0;
-        word-wrap: break-word;
-    }
-    .message-time {
-        font-size: 10px;
-        color: #999;
-        margin-top: 5px;
-    }
-    .btn-delete-msg {
-        background: none;
-        border: none;
-        color: #dc3545;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: bold;
-        padding: 0 5px;
-    }
-    .btn-delete-msg:hover {
-        color: #c82333;
-    }
+    .user-message { border-left: 4px solid #28a745; }
+    .admin-message { border-left: 4px solid #dc3545; background: #fff5f5; }
+    .system-message { background: #e8f0fe; text-align: center; font-style: italic; font-size: 13px; color: #666; }
+    .message-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+    .message-role { font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 8px; }
+    .message-role.admin { background: #dc3545; color: white; }
+    .message-role.user { background: #28a745; color: white; }
+    .message-text { margin: 5px 0; word-wrap: break-word; }
+    .message-time { font-size: 10px; color: #999; margin-top: 5px; }
+    .btn-delete-msg { background: none; border: none; color: #dc3545; cursor: pointer; font-size: 14px; font-weight: bold; padding: 0 5px; }
+    .btn-delete-msg:hover { color: #c82333; }
+    .btn-danger { background-color: #dc3545; color: white; }
+    .btn-danger:hover { background-color: #c82333; }
+    .btn-secondary { background-color: #6c757d; color: white; }
+    .btn-secondary:hover { background-color: #5a6268; }
+    .btn-small { padding: 5px 10px; font-size: 12px; }
+    .chat-input-area { display: flex; gap: 10px; padding: 15px; background: white; border-top: 1px solid #ddd; }
+    .chat-input-area input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+    .form-container { background: white; padding: 20px; border-radius: 8px; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+    .form-control { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
 </style>
 
 <%- include('partials/footer') %>

@@ -13,7 +13,7 @@ function setupRestApi(app) {
     app.use(express.static(path.join(__dirname, 'public')));
     
     app.get('/', (req, res) => {
-        res.render('index', { title: 'Белавиа - Национальная авиакомпания' });
+        res.render('index', { title: 'Взлёт - Национальная авиакомпания' });
     });
     
     app.get('/flights', async (req, res) => {
@@ -45,7 +45,7 @@ function setupRestApi(app) {
             };
             
             res.render('flights', { 
-                title: 'Рейсы Белавиа', 
+                title: 'Рейсы Взлёт', 
                 flights: result.flights,
                 pagination: pagination,
                 sortBy: sortBy,
@@ -253,17 +253,17 @@ function setupRestApi(app) {
             });
         }
     });
-    
+    app.get('/chat', (req, res) => {
+    res.render('chat', { title: 'Чат поддержки Взлёт' });
+    });
+
     app.use((req, res) => {
         res.status(404).render('error', { 
             title: 'Страница не найдена', 
             message: 'Запрошенная страница не существует' 
         });
     });
-
-    app.get('/chat', (req, res) => {
-    res.render('chat', { title: 'Чат поддержки Взлёт' });
-});
+ 
 }
 
 module.exports = setupRestApi;
